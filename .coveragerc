@@ -1,0 +1,5 @@
+[run]
+source = feps
+
+[report]
+fail_under = 85
