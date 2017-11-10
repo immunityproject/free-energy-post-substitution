@@ -3,6 +3,7 @@ main.py - main functionality for tsgen tool
 """
 
 import click
+import csv
 import json
 import os
 import sys
@@ -34,6 +35,25 @@ def get_energy_vectors(db, protein, start, end):
 
     raise IOError('Could not find {}, {}, {}'.format(protein, start, end))
 
+def dump_json(protein, startsite, endsite, evs):
+    print('EVs for protein {}, start {}, end {}: '.format(protein,
+                                                          startsite, endsite))
+    print(json.dumps(evs, indent=2))
+
+def dump_csv(protein, evs):
+    fieldnames = [ 'protein', 'site', 'wt' ]
+    fieldnames.extend([x['mutation'] for x in list(evs.values())[0]])
+    writer = csv.DictWriter(sys.stdout, fieldnames=fieldnames)
+    writer.writeheader()
+    for site,evlist in evs.items():
+        row = dict()
+        row['protein'] = protein
+        row['site'] = site
+        row['wt'] = evlist[0]['wt']
+        for ev in evlist:
+            row[ev['mutation']] = ev['energyDelta']
+        writer.writerow(row)
+
 @click.command()
 @click.option('--database', default='https://epitopedata.flowpharma.com/P17',
               help='The URL to the epitope data')
@@ -42,9 +62,11 @@ def get_energy_vectors(db, protein, start, end):
 @click.option('--mutation-protein', '-m', default=None,
               help=('The mutation protein, will return the 20 delta G '
                     'energy vectors for all sites'))
+@click.option('--json/--no-json', default=False, help='Dump json output')
+@click.option('--csv/--no-csv', default=True, help='Dump csv output')
 @click.argument('startsite', default=None, type=int, required=False)
 @click.argument('endsite', default=None, type=int, required=False)
-def cli(database, protein, mutation_protein, startsite, endsite):
+def cli(database, protein, mutation_protein, startsite, endsite, json, csv):
     db = load_db(database)
 
     # If mutation protein is set, check valid and that start/end are not set
@@ -60,10 +82,10 @@ def cli(database, protein, mutation_protein, startsite, endsite):
         assert endsite in sites
 
     evs = get_energy_vectors(db, protein, startsite, endsite)
-
-    print('EVs for protein {}, start {}, end {}: '.format(protein,
-                                                          startsite, endsite))
-    print(json.dumps(evs, indent=2))
+    if json:
+        dump_json(protein, startsite, endsite, evs)
+    if csv:
+        dump_csv(protein, evs)
 
 if __name__ == '__main__':
     cli()
