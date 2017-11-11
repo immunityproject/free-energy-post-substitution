@@ -54,12 +54,50 @@ def dump_csv(protein, evs):
             row[ev['mutation']] = ev['energyDelta']
         writer.writerow(row)
 
+def dump_protein(db, protein, mutation_proteins, startsite, endsite, json, csv):
+    # If mutation protein is set, check valid and that start/end are not set
+    print_sites = []
+
+    if startsite and endsite:
+        print_sites.append((startsite, endsite))
+    for mp in mutation_proteins:
+        # TODO: Error messages
+        if mp not in db[protein].keys():
+            print('Mutation protein {} not in protein {}'.format(mp, protein),
+                  file=sys.stderr)
+            continue
+
+        if not db[protein][mp]['energies']:
+            print('Energy lists for protein {} mutation protein {} is'
+                  ' empty!'.format(protein, mp))
+            continue
+
+        sites = [int(x) for x in db[protein][mp]['energies'][protein].keys()]
+        if not startsite:
+            startsite = min(sites)
+        if not endsite:
+            endsite = max(sites)
+
+        print(sites)
+
+        print_sites.append((str(startsite), str(endsite)))
+
+    for start,end in print_sites:
+        evs = get_energy_vectors(db, protein, start, end)
+        if not evs or not evs.values():
+            print('Could not get enery vectors for protein {}, {},'
+                  ' {}'.format(protein, start, end))
+        if json:
+            dump_json(protein, startsite, endsite, evs)
+        if csv:
+            dump_csv(protein, evs)
+
 @click.command()
 @click.option('--database', default='https://epitopedata.flowpharma.com/P17',
               help='The URL to the epitope data')
-@click.option('--protein', '-p', type=click.Choice(proteins),
+@click.option('--protein', '-p', type=click.Choice(proteins), multiple=True,
               help='The selected HIV Protein')
-@click.option('--mutation-protein', '-m', default=None,
+@click.option('--mutation-protein', '-m', default=None, multiple=True,
               help=('The mutation protein, will return the 20 delta G '
                     'energy vectors for all sites'))
 @click.option('--json/--no-json', default=False, help='Dump json output')
@@ -69,23 +107,19 @@ def dump_csv(protein, evs):
 def cli(database, protein, mutation_protein, startsite, endsite, json, csv):
     db = load_db(database)
 
-    # If mutation protein is set, check valid and that start/end are not set
-    if mutation_protein:
-        # TODO: Error messages
-        assert mutation_protein in db[protein].keys()
-        sites = db[protein][mutation_protein]['energies'][protein].keys()
-        if not startsite:
-            startsite = min(sites)
-        if not endsite:
-            endsite = max(sites)
-        assert startsite in sites
-        assert endsite in sites
+    # Select all proteins if none are selected
+    if not protein:
+        protein = list(db.keys())
 
-    evs = get_energy_vectors(db, protein, startsite, endsite)
-    if json:
-        dump_json(protein, startsite, endsite, evs)
-    if csv:
-        dump_csv(protein, evs)
+    # select all mutation proteins if none are selected
+    if not mutation_protein:
+        mutation_protein = list()
+        for p in protein:
+            mutation_protein.extend(list(db[p].keys()))
+
+    for p in protein:
+        dump_protein(db, p, mutation_protein, startsite, endsite, json, csv)
+
 
 if __name__ == '__main__':
     cli()
