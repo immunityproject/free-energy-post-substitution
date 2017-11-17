@@ -26,8 +26,16 @@ def get_energy_vectors(db, protein, start, end):
     start = int(start)
     end = int(end)
     for mutation_protein,value in db[protein].items():
-        sites = [int(s) for s in value['energies'].get(protein, {}).keys()]
+        sites = sorted([int(s)
+                        for s in value['energies'].get(protein, {}).keys()])
         if not sites or start not in sites or end not in sites:
+            continue
+
+        if start != sites[0] or end != sites[-1]:
+            print('Found overlapping sites in mutation protein {}: {}-{} '
+                  'instead of {}-{}'.format(mutation_protein,
+                                            sites[0], sites[-1],
+                                            start, end))
             continue
 
         evs = {k: v for k, v in value['energies'][protein].items()
