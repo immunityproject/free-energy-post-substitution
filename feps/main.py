@@ -25,13 +25,17 @@ def load_db(databaseurl):
 def get_energy_vectors(db, protein, start, end):
     start = int(start)
     end = int(end)
-    for k,v in db[protein].items():
-        sites = [int(s) for s in v['energies'].get(protein, {}).keys()]
+    for mutation_protein,value in db[protein].items():
+        sites = [int(s) for s in value['energies'].get(protein, {}).keys()]
         if not sites or start not in sites or end not in sites:
             continue
 
-        return {k: v for k, v in v['energies'][protein].items()
-                if int(k) >= start and int(k) <= end}
+        evs = {k: v for k, v in value['energies'][protein].items()
+               if int(k) >= start and int(k) <= end}
+        final_evs = dict()
+        final_evs['sites'] = evs
+        final_evs['mutation_protein'] = mutation_protein
+        return final_evs
 
     raise IOError('Could not find {}, {}, {}'.format(protein, start, end))
 
@@ -41,13 +45,15 @@ def dump_json(protein, startsite, endsite, evs):
     print(json.dumps(evs, indent=2))
 
 def dump_csv(protein, evs):
-    fieldnames = [ 'protein', 'site', 'wt' ]
-    fieldnames.extend([x['mutation'] for x in list(evs.values())[0]])
+    fieldnames = [ 'protein', 'mutation_protein', 'site', 'wt' ]
+    fieldnames.extend([x['mutation'] for x in list(evs['sites'].values())[0]])
     writer = csv.DictWriter(sys.stdout, fieldnames=fieldnames)
     writer.writeheader()
-    for site,evlist in evs.items():
+    mp = evs['mutation_protein']
+    for site,evlist in evs['sites'].items():
         row = dict()
         row['protein'] = protein
+        row['mutation_protein'] = mp
         row['site'] = site
         row['wt'] = evlist[0]['wt']
         for ev in evlist:
@@ -60,33 +66,35 @@ def dump_protein(db, protein, mutation_proteins, startsite, endsite, json, csv):
 
     if startsite and endsite:
         print_sites.append((startsite, endsite))
-    for mp in mutation_proteins:
-        # TODO: Error messages
-        if mp not in db[protein].keys():
-            print('Mutation protein {} not in protein {}'.format(mp, protein),
-                  file=sys.stderr)
-            continue
+    else:
+        for mp in mutation_proteins:
+            # TODO: Error messages
+            if mp not in db[protein].keys():
+                print('Mutation protein {} not in protein {}'.format(mp,
+                                                                     protein),
+                      file=sys.stderr)
+                continue
 
-        if not db[protein][mp]['energies']:
-            print('Energy lists for protein {} mutation protein {} is'
-                  ' empty!'.format(protein, mp))
-            continue
+            if not db[protein][mp]['energies']:
+                print('Energy lists for protein {} mutation protein {} is'
+                      ' empty!'.format(protein, mp), file=sys.stderr)
+                continue
 
-        sites = [int(x) for x in db[protein][mp]['energies'][protein].keys()]
-        if not startsite:
+            sites = [int(x)
+                     for x in db[protein][mp]['energies'][protein].keys()]
             startsite = min(sites)
-        if not endsite:
             endsite = max(sites)
 
-        print(sites)
+            print('MP: {}, {}, {}'.format(mp, startsite, endsite),
+                  file=sys.stderr)
 
-        print_sites.append((str(startsite), str(endsite)))
+            print_sites.append((str(startsite), str(endsite)))
 
     for start,end in print_sites:
         evs = get_energy_vectors(db, protein, start, end)
         if not evs or not evs.values():
             print('Could not get enery vectors for protein {}, {},'
-                  ' {}'.format(protein, start, end))
+                  ' {}'.format(protein, start, end), file=sys.stderr)
         if json:
             dump_json(protein, startsite, endsite, evs)
         if csv:
