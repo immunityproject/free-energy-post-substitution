@@ -22,46 +22,36 @@ def load_db(databaseurl):
 
     return json.load(open(localfn, 'r'))
 
-def get_energy_vectors(db, protein, start, end):
+def get_energy_vectors(db, protein, mutation_protein, start, end):
     start = int(start)
     end = int(end)
-    for mutation_protein,value in db[protein].items():
-        sites = sorted([int(s)
-                        for s in value['energies'].get(protein, {}).keys()])
-        if not sites or start not in sites or end not in sites:
-            continue
+    if mutation_protein not in db[protein]:
+        raise IOError('Could not find {}, {}, {}'.format(protein, start, end))
 
-        if start != sites[0] or end != sites[-1]:
-            print('Found overlapping sites in mutation protein {}: {}-{} '
-                  'instead of {}-{}'.format(mutation_protein,
-                                            sites[0], sites[-1],
-                                            start, end))
-            continue
+    value = db[protein][mutation_protein]
+    sites = sorted([int(s) for s in value['energies'].get(protein, {}).keys()])
+    if not sites or start not in sites or end not in sites:
+        raise IOError('Sites {}, {} are not in {}, {}'.format(start, end,
+                                                              protein,
+                                                              mutation_protein))
 
-        evs = {k: v for k, v in value['energies'][protein].items()
-               if int(k) >= start and int(k) <= end}
-        final_evs = dict()
-        final_evs['sites'] = evs
-        final_evs['mutation_protein'] = mutation_protein
-        return final_evs
+    return {k: v for k, v in value['energies'][protein].items()
+            if int(k) >= start and int(k) <= end}
 
-    raise IOError('Could not find {}, {}, {}'.format(protein, start, end))
-
-def dump_json(protein, startsite, endsite, evs):
-    print('EVs for protein {}, start {}, end {}: '.format(protein,
-                                                          startsite, endsite))
+def dump_json(protein, mutation_protein, startsite, endsite, evs):
+    print('EVs for protein {}, mutation {}, start {}, end {}: '.format(
+        protein, mutation_protein, startsite, endsite))
     print(json.dumps(evs, indent=2))
 
-def dump_csv(protein, evs):
+def dump_csv(protein, mutation_protein, evs):
     fieldnames = [ 'protein', 'mutation_protein', 'site', 'wt' ]
-    fieldnames.extend([x['mutation'] for x in list(evs['sites'].values())[0]])
+    fieldnames.extend([x['mutation'] for x in list(evs.values())[0]])
     writer = csv.DictWriter(sys.stdout, fieldnames=fieldnames)
     writer.writeheader()
-    mp = evs['mutation_protein']
-    for site,evlist in evs['sites'].items():
+    for site,evlist in evs.items():
         row = dict()
         row['protein'] = protein
-        row['mutation_protein'] = mp
+        row['mutation_protein'] = mutation_protein
         row['site'] = site
         row['wt'] = evlist[0]['wt']
         for ev in evlist:
@@ -96,17 +86,17 @@ def dump_protein(db, protein, mutation_proteins, startsite, endsite, json, csv):
             print('MP: {}, {}, {}'.format(mp, startsite, endsite),
                   file=sys.stderr)
 
-            print_sites.append((str(startsite), str(endsite)))
+            print_sites.append((mp, str(startsite), str(endsite)))
 
-    for start,end in print_sites:
-        evs = get_energy_vectors(db, protein, start, end)
+    for mp,start,end in print_sites:
+        evs = get_energy_vectors(db, protein, mp, start, end)
         if not evs or not evs.values():
             print('Could not get enery vectors for protein {}, {},'
-                  ' {}'.format(protein, start, end), file=sys.stderr)
+                  ' {}, {}'.format(protein, mp, start, end), file=sys.stderr)
         if json:
-            dump_json(protein, startsite, endsite, evs)
+            dump_json(protein, mp, startsite, endsite, evs)
         if csv:
-            dump_csv(protein, evs)
+            dump_csv(protein, mp, evs)
 
 @click.command()
 @click.option('--database', default='https://epitopedata.flowpharma.com/P17',
@@ -132,6 +122,8 @@ def cli(database, protein, mutation_protein, startsite, endsite, json, csv):
         mutation_protein = list()
         for p in protein:
             mutation_protein.extend(list(db[p].keys()))
+    # Remove duplicates
+    mutation_protein = list(set(mutation_protein))
 
     for p in protein:
         dump_protein(db, p, mutation_protein, startsite, endsite, json, csv)
