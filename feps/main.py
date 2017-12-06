@@ -44,7 +44,8 @@ def dump_json(protein, mutation_protein, startsite, endsite, evs):
     print(json.dumps(evs, indent=2))
 
 def dump_csv(protein, mutation_protein, evs):
-    fieldnames = [ 'protein', 'mutation_protein', 'site', 'wt' ]
+    fieldnames = [ 'protein', 'mutation_protein', 'site', 'entropy',
+                   'displacement', 'wt' ]
     fieldnames.extend([x['mutation'] for x in list(evs.values())[0]])
     writer = csv.DictWriter(sys.stdout, fieldnames=fieldnames)
     writer.writeheader()
@@ -58,7 +59,21 @@ def dump_csv(protein, mutation_protein, evs):
             row[ev['mutation']] = ev['energyDelta']
         writer.writerow(row)
 
-def dump_protein(db, protein, mutation_proteins, startsite, endsite, json, csv):
+def dump_other(db, protein, mutation_protein):
+    """TEMPORARY FUNCTION, used to dump entropies and displacements
+    lists, which are sorted but not correlated to their original
+    sites. To be fixed soon."""
+    entropies = ','.join(db[protein][mutation_protein].get('entropies', []))
+    print('{},{},entropies,{}'.format(protein, mutation_protein,
+                                      entropies))
+    displacements = ','.join(db[protein][mutation_protein].get('displacements',
+                                                               []))
+    print('{},{},displacements,{}'.format(protein, mutation_protein,
+                                          displacements))
+
+
+def dump_protein(db, protein, mutation_proteins, startsite, endsite, json, csv,
+                 other):
     # If mutation protein is set, check valid and that start/end are not set
     print_sites = []
 
@@ -97,6 +112,8 @@ def dump_protein(db, protein, mutation_proteins, startsite, endsite, json, csv):
             dump_json(protein, mp, startsite, endsite, evs)
         if csv:
             dump_csv(protein, mp, evs)
+        if other:
+            dump_other(db, protein, mp)
 
 @click.command()
 @click.option('--database', default='https://epitopedata.flowpharma.com/P17',
@@ -108,9 +125,12 @@ def dump_protein(db, protein, mutation_proteins, startsite, endsite, json, csv):
                     'energy vectors for all sites'))
 @click.option('--json/--no-json', default=False, help='Dump json output')
 @click.option('--csv/--no-csv', default=True, help='Dump csv output')
+@click.option('--dump-other/--no-dump-other', default=False,
+              help='Temporary command to dump entropies and displacements')
 @click.argument('startsite', default=None, type=int, required=False)
 @click.argument('endsite', default=None, type=int, required=False)
-def cli(database, protein, mutation_protein, startsite, endsite, json, csv):
+def cli(database, protein, mutation_protein, startsite, endsite, json, csv,
+        dump_other):
     db = load_db(database)
 
     # Select all proteins if none are selected
@@ -126,7 +146,8 @@ def cli(database, protein, mutation_protein, startsite, endsite, json, csv):
     mutation_protein = list(set(mutation_protein))
 
     for p in protein:
-        dump_protein(db, p, mutation_protein, startsite, endsite, json, csv)
+        dump_protein(db, p, mutation_protein, startsite, endsite, json, csv,
+                     dump_other)
 
 
 if __name__ == '__main__':
