@@ -9,145 +9,65 @@ import os
 import sys
 import requests
 
-proteins = [ 'RT', 'TAT', 'P24', 'INT', 'ZIKA_E', 'PRO', 'P17', 'REV',
+from collections import defaultdict
+
+proteins = [ 'RT', 'TAT', 'P24', 'INT', 'PRO', 'P17', 'REV',
              'GP120', 'NEF' ]
 
 def load_db(databaseurl):
     '''Either read cache or download the database'''
     localfn = os.path.basename(databaseurl)
+    if os.path.exists(databaseurl):
+        localfn = databaseurl
     if not os.path.exists(localfn):
         data = requests.get(databaseurl, timeout=30)
         with open(localfn, 'w') as outputfile:
             outputfile.write(data.text)
 
-    return json.load(open(localfn, 'r'))
-
-def get_energy_vectors(db, protein, mutation_protein, start, end):
-    start = int(start)
-    end = int(end)
-    if mutation_protein not in db[protein]:
-        raise IOError('Could not find {}, {}, {}'.format(protein, start, end))
-
-    value = db[protein][mutation_protein]
-    sites = sorted([int(s) for s in value['energies'].get(protein, {}).keys()])
-    if not sites or start not in sites or end not in sites:
-        raise IOError('Sites {}, {} are not in {}, {}'.format(start, end,
-                                                              protein,
-                                                              mutation_protein))
-
-    return {k: v for k, v in value['energies'][protein].items()
-            if int(k) >= start and int(k) <= end}
-
-def dump_json(protein, mutation_protein, startsite, endsite, evs):
-    print('EVs for protein {}, mutation {}, start {}, end {}: '.format(
-        protein, mutation_protein, startsite, endsite))
-    print(json.dumps(evs, indent=2))
-
-def dump_csv(protein, mutation_protein, evs):
-    fieldnames = [ 'protein', 'mutation_protein', 'site', 'entropy',
-                   'displacement', 'wt' ]
-    fieldnames.extend([x['mutation'] for x in list(evs.values())[0]])
-    writer = csv.DictWriter(sys.stdout, fieldnames=fieldnames)
-    writer.writeheader()
-    for site,evlist in evs.items():
-        row = dict()
-        row['protein'] = protein
-        row['mutation_protein'] = mutation_protein
-        row['site'] = site
-        row['wt'] = evlist[0]['wt']
-        for ev in evlist:
-            row[ev['mutation']] = ev['energyDelta']
-        writer.writerow(row)
-
-def dump_other(db, protein, mutation_protein):
-    """TEMPORARY FUNCTION, used to dump entropies and displacements
-    lists, which are sorted but not correlated to their original
-    sites. To be fixed soon."""
-    entropies = ','.join(db[protein][mutation_protein].get('entropies', []))
-    print('{},{},entropies,{}'.format(protein, mutation_protein,
-                                      entropies))
-    displacements = ','.join(db[protein][mutation_protein].get('displacements',
-                                                               []))
-    print('{},{},displacements,{}'.format(protein, mutation_protein,
-                                          displacements))
-
-
-def dump_protein(db, protein, mutation_proteins, startsite, endsite, json, csv,
-                 other):
-    # If mutation protein is set, check valid and that start/end are not set
-    print_sites = []
-
-    if startsite and endsite:
-        print_sites.append((startsite, endsite))
-    else:
-        for mp in mutation_proteins:
-            # TODO: Error messages
-            if mp not in db[protein].keys():
-                print('Mutation protein {} not in protein {}'.format(mp,
-                                                                     protein),
-                      file=sys.stderr)
-                continue
-
-            if not db[protein][mp]['energies']:
-                print('Energy lists for protein {} mutation protein {} is'
-                      ' empty!'.format(protein, mp), file=sys.stderr)
-                continue
-
-            sites = [int(x)
-                     for x in db[protein][mp]['energies'][protein].keys()]
-            startsite = min(sites)
-            endsite = max(sites)
-
-            print('MP: {}, {}, {}'.format(mp, startsite, endsite),
-                  file=sys.stderr)
-
-            print_sites.append((mp, str(startsite), str(endsite)))
-
-    for mp,start,end in print_sites:
-        evs = get_energy_vectors(db, protein, mp, start, end)
-        if not evs or not evs.values():
-            print('Could not get enery vectors for protein {}, {},'
-                  ' {}, {}'.format(protein, mp, start, end), file=sys.stderr)
-        if json:
-            dump_json(protein, mp, startsite, endsite, evs)
-        if csv:
-            dump_csv(protein, mp, evs)
-        if other:
-            dump_other(db, protein, mp)
+    with open(localfn, 'rb') as local:
+        for line in local:
+            yield json.loads(line.rstrip())
 
 @click.command()
-@click.option('--database', default='https://epitopedata.flowpharma.com/P17',
-              help='The URL to the epitope data')
-@click.option('--protein', '-p', type=click.Choice(proteins), multiple=True,
-              help='The selected HIV Protein')
-@click.option('--mutation-protein', '-m', default=None, multiple=True,
-              help=('The mutation protein, will return the 20 delta G '
-                    'energy vectors for all sites'))
-@click.option('--json/--no-json', default=False, help='Dump json output')
-@click.option('--csv/--no-csv', default=True, help='Dump csv output')
-@click.option('--dump-other/--no-dump-other', default=False,
-              help='Temporary command to dump entropies and displacements')
-@click.argument('startsite', default=None, type=int, required=False)
-@click.argument('endsite', default=None, type=int, required=False)
-def cli(database, protein, mutation_protein, startsite, endsite, json, csv,
-        dump_other):
+@click.option('--database',
+              default='https://epitopedata.flowpharma.com/EpitopeData.json',
+              help='URL to a jsonl encoded file to dump')
+def cli(database):
     db = load_db(database)
 
-    # Select all proteins if none are selected
-    if not protein:
-        protein = list(db.keys())
+    energies = defaultdict(dict)
+    for jsl in db:
+        for k,entry in jsl.items():
+            protein = entry['protein']
+            wt = entry['wt']
+            mut = entry['mutation']
+            site = entry['site']
+            energy = entry['energy_deltas']['total energy']
+            key = '{},{}'.format(protein,site)
+            energies[key]['protein'] = protein
+            energies[key]['mutation_protein'] = ''
+            energies[key]['site'] = site
+            energies[key]['entropy'] = ''
+            energies[key]['displacement'] = ''
+            energies[key]['wt'] = wt
+            energies[key][mut] = energy
 
-    # select all mutation proteins if none are selected
-    if not mutation_protein:
-        mutation_protein = list()
-        for p in protein:
-            mutation_protein.extend(list(db[p].keys()))
-    # Remove duplicates
-    mutation_protein = list(set(mutation_protein))
-
-    for p in protein:
-        dump_protein(db, p, mutation_protein, startsite, endsite, json, csv,
-                     dump_other)
+    sorted_keys = sorted(energies.keys(), key=lambda x: int(x.split(',')[1]))
+    fieldnames = [ 'protein', 'mutation_protein', 'site', 'entropy',
+                   'displacement', 'wt' ]
+    cur_fns = set()
+    writer = None
+    for k in sorted_keys:
+        v = energies[k]
+        new_fns = {f for f in v.keys()
+                   if f not in cur_fns and f not in fieldnames}
+        if new_fns or not writer:
+            cur_fns = new_fns
+            fns = [f for f in fieldnames]
+            fns.extend(sorted(new_fns))
+            writer = csv.DictWriter(sys.stdout, fieldnames=fns)
+            writer.writeheader()
+        writer.writerow(v)
 
 
 if __name__ == '__main__':
