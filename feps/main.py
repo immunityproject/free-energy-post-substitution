@@ -39,22 +39,22 @@ def cli(database):
     for jsl in db:
         for k,entry in jsl.items():
             protein = entry['protein']
+            subprotein = entry['subprotein']
             wt = entry['wt']
             mut = entry['mutation']
             site = entry['site']
             energy = entry['energy_deltas']['total energy']
             key = '{},{}'.format(protein,site)
             energies[key]['protein'] = protein
-            energies[key]['mutation_protein'] = ''
+            energies[key]['subprotein'] = subprotein
+            energies[key]['epitope'] = entry.get('epitope', '')
+            energies[key]['peptide'] = entry.get('peptide', '')
             energies[key]['site'] = site
-            energies[key]['entropy'] = ''
-            energies[key]['displacement'] = ''
             energies[key]['wt'] = wt
             energies[key][mut] = energy
 
     sorted_keys = sorted(energies.keys(), key=lambda x: int(x.split(',')[1]))
-    fieldnames = [ 'protein', 'mutation_protein', 'site', 'entropy',
-                   'displacement', 'wt' ]
+    fieldnames = [ 'protein', 'subprotein', 'epitope', 'peptide', 'site', 'wt' ]
     cur_fns = set()
     writer = None
     for k in sorted_keys:
