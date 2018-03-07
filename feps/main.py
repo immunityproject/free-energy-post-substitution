@@ -44,7 +44,7 @@ def cli(database):
             mut = entry['mutation']
             site = entry['site']
             energy = entry['energy_deltas']['total energy']
-            key = '{},{}'.format(protein,site)
+            key = '{},{},{}'.format(protein,site,wt)
             energies[key]['protein'] = protein
             energies[key]['subprotein'] = subprotein
             energies[key]['epitope'] = entry.get('epitope', '')
