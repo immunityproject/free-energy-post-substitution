@@ -11,8 +11,38 @@ import requests
 
 from collections import defaultdict
 
+def eprint(*args, **kwargs):
+    print(*args, file=sys.stderr, **kwargs)
+
 proteins = [ 'RT', 'TAT', 'P24', 'INT', 'PRO', 'P17', 'REV',
              'GP120', 'NEF' ]
+
+# This should remain the same.  Represents amino character mapping to
+# common codes used inside FoldX.
+codes = {"ALA": "A",
+         "ARG": "R",
+         "ASN": "N",
+         "ASP": "D",
+         "ASX": "B",
+         "CYS": "C",
+         "GLU": "E",
+         "GLN": "Q",
+         "GLX": "Z",
+         "GLY": "G",
+         "HIS": "H",
+         "ILE": "I",
+         "LEU": "L",
+         "LYS": "K",
+         "MET": "M",
+         "PHE": "F",
+         "PRO": "P",
+         "SER": "S",
+         "THR": "T",
+         "TRP": "W",
+         "TYR": "Y",
+         "VAL": "V",
+         "TPO": "X"}
+
 
 def load_db(databaseurl):
     '''Either read cache or download the database'''
@@ -55,18 +85,24 @@ def cli(database):
 
     sorted_keys = sorted(energies.keys(), key=lambda x: int(x.split(',')[1]))
     fieldnames = [ 'protein', 'subprotein', 'epitope', 'peptide', 'site', 'wt' ]
-    cur_fns = set()
+    fieldnames.extend(sorted(codes.values()))
     writer = None
     for k in sorted_keys:
         v = energies[k]
-        new_fns = {f for f in v.keys()
-                   if f not in cur_fns and f not in fieldnames}
-        if new_fns or not writer:
-            cur_fns = new_fns
-            fns = [f for f in fieldnames]
-            fns.extend(sorted(new_fns))
-            writer = csv.DictWriter(sys.stdout, fieldnames=fns)
+
+        # Check for missing values and print info to create job to regenerate
+        for c in codes.values():
+            if not v.get(c, None):
+                eprint('Missing Data: {}, {}, {}, {}'.format(v['protein'],
+                                                             v['site'],
+                                                             v['wt'],
+                                                             c))
+
+        # Print header
+        if not writer:
+            writer = csv.DictWriter(sys.stdout, fieldnames=fieldnames)
             writer.writeheader()
+
         writer.writerow(v)
 
 
