@@ -92,7 +92,7 @@ def cli(database):
 
         # Check for missing values and print info to create job to regenerate
         for c in codes.values():
-            if not v.get(c, None):
+            if c not in v:
                 eprint('Missing Data: {}, {}, {}, {}'.format(v['protein'],
                                                              v['site'],
                                                              v['wt'],
