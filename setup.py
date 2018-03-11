@@ -12,6 +12,7 @@ setup(
     packages=['feps'],
     install_requires=[
         'pytest-cov',
+        'bigfloat',
         'pytest',
         'coverage',
         'click',
