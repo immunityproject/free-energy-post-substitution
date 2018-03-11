@@ -1,6 +1,7 @@
 """
 main.py - main functionality for tsgen tool
 """
+from __future__ import print_function
 
 import click
 import csv
@@ -73,18 +74,24 @@ def cli(database):
             wt = entry['wt']
             mut = entry['mutation']
             site = entry['site']
+            chains = entry['chains']
+            epitope = entry.get('epitope', '')
+            peptide = entry.get('peptide', '')
             energy = entry['energy_deltas']['total energy']
-            key = '{},{},{}'.format(protein,site,wt)
+            key = '{},{},{},{},{},{}'.format(protein, site, wt, epitope,
+                                             peptide, chains)
             energies[key]['protein'] = protein
             energies[key]['subprotein'] = subprotein
-            energies[key]['epitope'] = entry.get('epitope', '')
-            energies[key]['peptide'] = entry.get('peptide', '')
+            energies[key]['epitope'] = epitope
+            energies[key]['peptide'] = peptide
             energies[key]['site'] = site
+            energies[key]['chains'] = chains
             energies[key]['wt'] = wt
             energies[key][mut] = energy
 
     sorted_keys = sorted(energies.keys(), key=lambda x: int(x.split(',')[1]))
-    fieldnames = [ 'protein', 'subprotein', 'epitope', 'peptide', 'site', 'wt' ]
+    fieldnames = [ 'protein', 'subprotein', 'epitope', 'peptide', 'site',
+                   'chains', 'wt' ]
     fieldnames.extend(sorted(codes.values()))
     writer = None
     for k in sorted_keys:
