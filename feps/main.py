@@ -45,7 +45,8 @@ def cli(database, entropy):
 
         # Print header
         if not writer:
-            writer = csv.DictWriter(sys.stdout, fieldnames=fieldnames)
+            writer = csv.DictWriter(sys.stdout, fieldnames=fieldnames,
+                                    extrasaction='ignore')
             writer.writeheader()
 
         writer.writerow(v)

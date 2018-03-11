@@ -78,6 +78,8 @@ def combine_energy_mutations(energydb):
             energies[key]['site'] = site
             energies[key]['chains'] = chains
             energies[key]['wt'] = wt
+            energies[key]['start'] = entry.get('start', '')
+            energies[key]['end'] = entry.get('end', '')
             energies[key][mut] = energy
     return energies
 
