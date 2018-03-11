@@ -20,7 +20,8 @@ setup(
     ],
     entry_points={
        'console_scripts': [
-           'feps = feps.main:cli'
+           'feps = feps.main:cli',
+           'seps = feps.epitopeenergies:epitope_energies'
        ]
     }
 )

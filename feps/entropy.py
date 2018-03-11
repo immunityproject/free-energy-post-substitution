@@ -5,6 +5,12 @@ entropy.py - functions for boltzmann probabilities and shannon entropies
 
 import bigfloat
 
+def mean(list):
+    num = len(list)
+    if num == 0:
+        return float('NaN')
+    return sum(list) / num
+
 def compute_entropy(probabilities):
     # Compute Shannon Entropy of the given distribution
     # https://en.wikipedia.org/wiki/Entropy_(information_theory)
