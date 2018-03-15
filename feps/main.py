@@ -24,8 +24,8 @@ def cli(database, entropy):
 
     energies = combine_energy_mutations(db)
     sorted_keys = sorted(energies.keys(), key=lambda x: int(x.split(',')[1]))
-    fieldnames = [ 'protein', 'subprotein', 'epitope', 'peptide', 'site',
-                   'chains', 'wt' ]
+    fieldnames = [ 'protein', 'subprotein', 'epitope', 'peptide',
+                   'peptide_status', 'site', 'chains', 'wt' ]
     if entropy:
         energies = add_entropies(energies)
         fieldnames.insert(5, 'shannon_entropy')

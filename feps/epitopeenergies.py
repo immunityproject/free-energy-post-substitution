@@ -39,6 +39,7 @@ def get_epitope_energies(energies):
 
         epitopedb[key]['epitope'] = name
         epitopedb[key]['peptide'] = peptide
+        epitopedb[key]['peptide_status'] = entry['peptide_status']
         epitopedb[key]['startsite'] = int(startsite)
         epitopedb[key]['endsite'] = int(endsite)
         epitopedb[key]['protein'] = entry['protein']
@@ -85,7 +86,8 @@ def epitope_energies(database):
 
     sorted_keys = sorted(epitope_energies.keys(),
                          key=lambda x: int(x.split(',')[2]))
-    fieldnames = [ 'protein', 'epitope', 'peptide', 'peptide_state',
+    fieldnames = [ 'protein', 'epitope', 'peptide', 'peptide_status',
+                   'peptide_state',
                    'startsite', 'endsite', 'average_energy',
                    'structural_entropy' ]
     writer = None

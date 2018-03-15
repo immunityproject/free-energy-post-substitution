@@ -75,6 +75,7 @@ def combine_energy_mutations(energydb):
             energies[key]['subprotein'] = subprotein
             energies[key]['epitope'] = epitope
             energies[key]['peptide'] = peptide
+            energies[key]['peptide_status'] = entry.get('peptide_status', '')
             energies[key]['site'] = site
             energies[key]['chains'] = chains
             energies[key]['wt'] = wt
