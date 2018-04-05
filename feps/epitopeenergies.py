@@ -60,7 +60,8 @@ def get_epitope_energies(energies):
         # Average energy for the wt at this peptide index
         wtk = '{},{}'.format(idx,wt)
         epitopedb[key][wtk] = mean([entry[x]
-                                    for x in codes.values()])
+                                    for x in codes.values()
+                                    if x in entry])
         epitopedb[key][wtk + '-entropy'] = entry['shannon_entropy']
 
     # Now average energy and structural entropy
