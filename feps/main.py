@@ -21,7 +21,7 @@ def eprint(*args, **kwargs):
               help='Add shannon entropy to outputs')
 @click.option('--ignore-mutation', default=[], multiple=True,
               type=click.Choice(codes.values()),
-              help='Add shannon entropy to outputs')
+              help='Ignore these mutations')
 def cli(database, entropy, ignore_mutation):
     db = load_db(database)
     amino_codes = [aa for aa in codes.values() if aa not in ignore_mutation]

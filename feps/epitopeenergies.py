@@ -80,7 +80,7 @@ def get_epitope_energies(energies):
               help='URL to a jsonl encoded file to dump')
 @click.option('--ignore-mutation', default=[], multiple=True,
               type=click.Choice(codes.values()),
-              help='Add shannon entropy to outputs')
+              help='Ignore these mutations')
 def epitope_energies(database, ignore_mutation):
     db = load_db(database)
     amino_codes = [aa for aa in codes.values() if aa not in ignore_mutation]
