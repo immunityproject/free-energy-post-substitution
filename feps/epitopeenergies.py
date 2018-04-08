@@ -78,10 +78,15 @@ def get_epitope_energies(energies):
 @click.option('--database',
               default='https://epitopedata.flowpharma.com/EpitopeData.json',
               help='URL to a jsonl encoded file to dump')
-def epitope_energies(database):
+@click.option('--ignore-mutation', default=[], multiple=True,
+              type=click.Choice(codes.values()),
+              help='Add shannon entropy to outputs')
+def epitope_energies(database, ignore_mutation):
     db = load_db(database)
-    energies = combine_energy_mutations(db)
-    energies = add_entropies(energies)
+    amino_codes = [aa for aa in codes.values() if aa not in ignore_mutation]
+
+    energies = combine_energy_mutations(db, amino_codes)
+    energies = add_entropies(energies, amino_codes)
 
     epitope_energies = get_epitope_energies(energies)
 

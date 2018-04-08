@@ -52,17 +52,22 @@ def load_db(databaseurl):
         for line in local:
             yield json.loads(line.rstrip())
 
-def combine_energy_mutations(energydb):
+def combine_energy_mutations(energydb, amino_mutations):
     """This reads line-by-line energy database entries and collapses the
     matching site,wild_type -> mutation mappings to a single
-    site,wild_type -> mutations list mapping"""
+    site,wild_type -> mutations list mapping
+    """
     energies = defaultdict(dict)
     for jsl in energydb:
         for k,entry in jsl.items():
+            mut = entry['mutation']
+            if mut not in amino_mutations:
+                logging.info('Skipping {} because it is not in the mutations'
+                             ' list'.format(k))
+                continue
             protein = entry['protein']
             subprotein = entry['subprotein']
             wt = entry['wt']
-            mut = entry['mutation']
             site = entry['site']
             chains = entry['chains']
             epitope = entry.get('epitope', '')
@@ -85,12 +90,12 @@ def combine_energy_mutations(energydb):
             energies[key][mut] = energy
     return energies
 
-def add_entropies(energydb):
+def add_entropies(energydb, aminos):
     """For a given energy database calculated in energy.py, calculate
     the entropy for the site"""
     for k in energydb.keys():
         energies = list()
-        for amino in codes.values():
+        for amino in aminos:
             if amino not in energydb[k]:
                 logging.error('Missing amino energy from {}: {}'.format(
                     k, amino))

@@ -19,15 +19,19 @@ def eprint(*args, **kwargs):
               help='URL to a jsonl encoded file to dump')
 @click.option('--entropy/--no-entropy', default=False,
               help='Add shannon entropy to outputs')
-def cli(database, entropy):
+@click.option('--ignore-mutation', default=[], multiple=True,
+              type=click.Choice(codes.values()),
+              help='Add shannon entropy to outputs')
+def cli(database, entropy, ignore_mutation):
     db = load_db(database)
+    amino_codes = [aa for aa in codes.values() if aa not in ignore_mutation]
 
-    energies = combine_energy_mutations(db)
+    energies = combine_energy_mutations(db, amino_codes)
     sorted_keys = sorted(energies.keys(), key=lambda x: int(x.split(',')[1]))
     fieldnames = [ 'protein', 'subprotein', 'epitope', 'peptide',
                    'peptide_status', 'site', 'chains', 'wt' ]
     if entropy:
-        energies = add_entropies(energies)
+        energies = add_entropies(energies, amino_codes)
         fieldnames.insert(5, 'shannon_entropy')
 
     fieldnames.extend(sorted(codes.values()))
@@ -36,7 +40,7 @@ def cli(database, entropy):
         v = energies[k]
 
         # Check for missing values and print info to create job to regenerate
-        for c in codes.values():
+        for c in amino_codes:
             if c not in v:
                 eprint('Missing Data: {}, {}, {}, {}'.format(v['protein'],
                                                              v['site'],
