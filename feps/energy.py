@@ -6,6 +6,7 @@ energy.py - functions for handling energy database
 
 import os
 import json
+import logging
 import requests
 
 from collections import defaultdict
@@ -88,7 +89,13 @@ def add_entropies(energydb):
     """For a given energy database calculated in energy.py, calculate
     the entropy for the site"""
     for k in energydb.keys():
-        energies = [energydb[k][amino] for amino in codes.values()]
+        energies = list()
+        for amino in codes.values():
+            if amino not in energydb[k]:
+                logging.error('Missing amino energy from {}: {}'.format(
+                    k, amino))
+                continue
+            energies.append(energydb[k][amino])
         boltzman_probs = compute_boltzmann(energies)
         # TODO: we could add the probabilities to the dict here...
         energydb[k]['shannon_entropy'] = compute_entropy(boltzman_probs)
