@@ -19,10 +19,12 @@ def eprint(*args, **kwargs):
               help='URL to a jsonl encoded file to dump')
 @click.option('--entropy/--no-entropy', default=False,
               help='Add shannon entropy to outputs')
+@click.option('--absolute-entropy/--no-absolute-entropy', default=False,
+              help='Add shannon entropy to outputs')
 @click.option('--ignore-mutation', default=[], multiple=True,
               type=click.Choice(codes.values()),
               help='Ignore these mutations')
-def cli(database, entropy, ignore_mutation):
+def cli(database, entropy, absolute_entropy, ignore_mutation):
     db = load_db(database)
     amino_codes = [aa for aa in codes.values() if aa not in ignore_mutation]
 
@@ -31,8 +33,10 @@ def cli(database, entropy, ignore_mutation):
     fieldnames = [ 'protein', 'subprotein', 'epitope', 'peptide',
                    'peptide_status', 'site', 'chains', 'wt' ]
     if entropy:
-        energies = add_entropies(energies, amino_codes)
+        energies = add_entropies(energies, amino_codes, absolute_entropy)
+        fieldnames.insert(5, 'absolute_shannon_entropy')
         fieldnames.insert(5, 'shannon_entropy')
+
 
     fieldnames.extend(sorted(codes.values()))
     writer = None

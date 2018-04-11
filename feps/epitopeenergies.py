@@ -86,7 +86,8 @@ def epitope_energies(database, ignore_mutation):
     amino_codes = [aa for aa in codes.values() if aa not in ignore_mutation]
 
     energies = combine_energy_mutations(db, amino_codes)
-    energies = add_entropies(energies, amino_codes)
+    energies = add_entropies(energies, amino_codes,
+                             include_absolute_entropy = True)
 
     epitope_energies = get_epitope_energies(energies)
 
@@ -95,7 +96,7 @@ def epitope_energies(database, ignore_mutation):
     fieldnames = [ 'protein', 'epitope', 'peptide', 'peptide_status',
                    'peptide_state',
                    'startsite', 'endsite', 'average_energy',
-                   'structural_entropy' ]
+                   'structural_entropy', 'absolute_structural_entropy' ]
     writer = None
     for k in sorted_keys:
         v = epitope_energies[k]
