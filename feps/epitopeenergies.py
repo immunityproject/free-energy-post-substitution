@@ -63,6 +63,8 @@ def get_epitope_energies(energies):
                                     for x in codes.values()
                                     if x in entry])
         epitopedb[key][wtk + '-entropy'] = entry['shannon_entropy']
+        epitopedb[key][wtk + '-absolute-entropy'] = (
+            entry['absolute_shannon_entropy'])
 
     # Now average energy and structural entropy
     for _,v in epitopedb.items():
@@ -70,6 +72,8 @@ def get_epitope_energies(energies):
         keys = ['{},{}'.format(i,ps[i]) for i in range(len(ps))
                 if ps[i] != '-']
         v['structural_entropy'] = mean([v[k + '-entropy'] for k in keys])
+        v['absolute_structural_entropy'] = mean([v[k + '-absolute-entropy']
+                                                 for k in keys])
         v['average_energy'] = mean([v[k] for k in keys])
 
     return epitopedb
