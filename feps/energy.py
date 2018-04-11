@@ -105,7 +105,7 @@ def add_entropies(energydb, aminos, include_absolute_entropy = False):
         # TODO: we could add the probabilities to the dict here...
         energydb[k]['shannon_entropy'] = compute_entropy(boltzman_probs)
         if include_absolute_entropy:
-            abs_boltzman_probs = compute_boltzmann(energies)
+            abs_boltzman_probs = compute_boltzmann([abs(e) for e in energies])
             energydb[k]['absolute_shannon_entropy'] = compute_entropy(
                 abs_boltzman_probs)
     return energydb
