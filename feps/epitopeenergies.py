@@ -31,11 +31,12 @@ def get_epitope_energies(energies):
         startsite = entry['start']
         endsite = entry['end']
         site = entry['site']
+        chain = entry['chains']
         if not name:
             eprint('Skipping site {} as it does not match an epitope'.format(
                 site))
             continue
-        key = '{},{},{},{}'.format(name, peptide, startsite, endsite)
+        key = '{},{},{},{},{}'.format(name, peptide, startsite, endsite, chain)
 
         epitopedb[key]['epitope'] = name
         epitopedb[key]['peptide'] = peptide
@@ -43,6 +44,7 @@ def get_epitope_energies(energies):
         epitopedb[key]['startsite'] = int(startsite)
         epitopedb[key]['endsite'] = int(endsite)
         epitopedb[key]['protein'] = entry['protein']
+        epitopedb[key]['chains'] = chain
 
         wt = entry['wt']
         peptide_state = list(epitopedb[key].get('peptide_state',
@@ -99,7 +101,7 @@ def epitope_energies(database, ignore_mutation):
                          key=lambda x: int(x.split(',')[2]))
     fieldnames = [ 'protein', 'epitope', 'peptide', 'peptide_status',
                    'peptide_state',
-                   'startsite', 'endsite', 'average_energy',
+                   'startsite', 'endsite', 'chains', 'average_energy',
                    'structural_entropy', 'absolute_structural_entropy' ]
     writer = None
     for k in sorted_keys:
