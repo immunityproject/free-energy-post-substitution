@@ -90,7 +90,9 @@ def combine_energy_mutations(energydb, amino_mutations):
             energies[key][mut] = energy
     return energies
 
-def add_entropies(energydb, aminos, include_absolute_entropy = False):
+def add_entropies(energydb, aminos, include_absolute_entropy = False,
+                  include_boltzman_entropy = False,
+                  include_absolute_boltzman_entropy = False):
     """For a given energy database calculated in energy.py, calculate
     the entropy for the site"""
     for k in energydb.keys():
@@ -108,4 +110,14 @@ def add_entropies(energydb, aminos, include_absolute_entropy = False):
             abs_boltzman_probs = compute_boltzmann([abs(e) for e in energies])
             energydb[k]['absolute_shannon_entropy'] = compute_entropy(
                 abs_boltzman_probs)
+        if include_boltzman_entropy:
+            boltzman_classic_probs = compute_boltzmann(
+                [(e*4184/((1.38e-23*6.02e+23)*310.15)) for e in energies])
+            energydb[k]['boltzman_shannon_entropy'] = compute_entropy(
+                boltzman_classic_probs)
+        if include_absolute_boltzman_entropy:           
+            abs_boltzman_classic_probs = compute_boltzmann(
+                [abs(e*4184/((1.38e-23*6.02e+23)*310.15)) for e in energies])
+            energydb[k]['absolute_boltzman_shannon_entropy'] = compute_entropy(
+                abs_boltzman_classic_probs)
     return energydb
