@@ -21,10 +21,15 @@ def eprint(*args, **kwargs):
               help='Add shannon entropy to outputs')
 @click.option('--absolute-entropy/--no-absolute-entropy', default=False,
               help='Add shannon entropy to outputs')
+@click.option('--boltzman-entropy/--no-boltzman-entropy', default=False,
+              help='Add shannon entropy to outputs')
+@click.option('--boltzman-absolute-entropy/--no-boltzman-absolute-entropy',
+              default=False, help='Add shannon entropy to outputs')
 @click.option('--ignore-mutation', default=[], multiple=True,
               type=click.Choice(codes.values()),
               help='Ignore these mutations')
-def cli(database, entropy, absolute_entropy, ignore_mutation):
+def cli(database, entropy, absolute_entropy, boltzman_entropy,
+        boltzman_absolute_entropy, ignore_mutation):
     db = load_db(database)
     amino_codes = [aa for aa in codes.values() if aa not in ignore_mutation]
 
@@ -33,7 +38,10 @@ def cli(database, entropy, absolute_entropy, ignore_mutation):
     fieldnames = [ 'protein', 'subprotein', 'epitope', 'peptide',
                    'peptide_status', 'site', 'chains', 'wt' ]
     if entropy:
-        energies = add_entropies(energies, amino_codes, absolute_entropy)
+        energies = add_entropies(energies, amino_codes, absolute_entropy,
+                                 boltzman_entropy, boltzman_absolute_entropy)
+        fieldnames.insert(5, 'absolute_boltzman_shannon_entropy')
+        fieldnames.insert(5, 'boltzman_shannon_entropy')
         fieldnames.insert(5, 'absolute_shannon_entropy')
         fieldnames.insert(5, 'shannon_entropy')
 
