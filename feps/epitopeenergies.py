@@ -31,11 +31,12 @@ def get_epitope_energies(energies):
         startsite = entry['start']
         endsite = entry['end']
         site = entry['site']
+        chain = entry['chains']
         if not name:
             eprint('Skipping site {} as it does not match an epitope'.format(
                 site))
             continue
-        key = '{},{},{},{}'.format(name, peptide, startsite, endsite)
+        key = '{},{},{},{},{}'.format(name, peptide, startsite, endsite, chain)
 
         epitopedb[key]['epitope'] = name
         epitopedb[key]['peptide'] = peptide
@@ -43,6 +44,7 @@ def get_epitope_energies(energies):
         epitopedb[key]['startsite'] = int(startsite)
         epitopedb[key]['endsite'] = int(endsite)
         epitopedb[key]['protein'] = entry['protein']
+        epitopedb[key]['chains'] = chain
 
         wt = entry['wt']
         peptide_state = list(epitopedb[key].get('peptide_state',
@@ -65,6 +67,10 @@ def get_epitope_energies(energies):
         epitopedb[key][wtk + '-entropy'] = entry['shannon_entropy']
         epitopedb[key][wtk + '-absolute-entropy'] = (
             entry['absolute_shannon_entropy'])
+        epitopedb[key][wtk + '-boltzman-entropy'] = (
+            entry['boltzman_shannon_entropy'])
+        epitopedb[key][wtk + '-boltzman-absolute-entropy'] = (
+            entry['absolute_boltzman_shannon_entropy'])
 
     # Now average energy and structural entropy
     for _,v in epitopedb.items():
@@ -74,6 +80,10 @@ def get_epitope_energies(energies):
         v['structural_entropy'] = mean([v[k + '-entropy'] for k in keys])
         v['absolute_structural_entropy'] = mean([v[k + '-absolute-entropy']
                                                  for k in keys])
+        v['boltzman_structural_entropy'] = mean([v[k + '-boltzman-entropy']
+                                                 for k in keys])
+        v['boltzman_absolute_structural_entropy'] = mean(
+            [v[k + '-boltzman-absolute-entropy'] for k in keys])
         v['average_energy'] = mean([v[k] for k in keys])
 
     return epitopedb
@@ -91,7 +101,9 @@ def epitope_energies(database, ignore_mutation):
 
     energies = combine_energy_mutations(db, amino_codes)
     energies = add_entropies(energies, amino_codes,
-                             include_absolute_entropy = True)
+                             include_absolute_entropy = True,
+                             include_boltzman_entropy= True,
+                             include_absolute_boltzman_entropy= True)
 
     epitope_energies = get_epitope_energies(energies)
 
@@ -99,8 +111,10 @@ def epitope_energies(database, ignore_mutation):
                          key=lambda x: int(x.split(',')[2]))
     fieldnames = [ 'protein', 'epitope', 'peptide', 'peptide_status',
                    'peptide_state',
-                   'startsite', 'endsite', 'average_energy',
-                   'structural_entropy', 'absolute_structural_entropy' ]
+                   'startsite', 'endsite', 'chains', 'average_energy',
+                   'structural_entropy', 'absolute_structural_entropy',
+                   'boltzman_structural_entropy',
+                   'boltzman_absolute_structural_entropy']
     writer = None
     for k in sorted_keys:
         v = epitope_energies[k]
