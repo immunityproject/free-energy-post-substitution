@@ -52,7 +52,7 @@ def load_db(databaseurl):
         for line in local:
             yield json.loads(line.rstrip())
 
-def combine_energy_mutations(energydb, amino_mutations):
+def combine_energy_mutations(energydb, amino_mutations, energy_type):
     """This reads line-by-line energy database entries and collapses the
     matching site,wild_type -> mutation mappings to a single
     site,wild_type -> mutations list mapping
@@ -72,7 +72,7 @@ def combine_energy_mutations(energydb, amino_mutations):
             chains = entry['chains']
             epitope = entry.get('epitope', '')
             peptide = entry.get('peptide', '')
-            energy = entry['energy_deltas']['total energy']
+            energy = entry['energy_deltas'][energy_type]
             # The key needs to be unique enough to match different chains and
             # epitope peptides, but not duplicate entries on top of each other
             key = '{},{},{},{},{},{}'.format(protein, site, wt, epitope,

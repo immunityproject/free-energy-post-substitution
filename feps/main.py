@@ -28,12 +28,14 @@ def eprint(*args, **kwargs):
 @click.option('--ignore-mutation', default=[], multiple=True,
               type=click.Choice(codes.values()),
               help='Ignore these mutations')
+@click.option('--energy_deltas', default='total energy', multiple=False,
+              help='Select the type of data to parse')
+
 def cli(database, entropy, absolute_entropy, boltzman_entropy,
-        boltzman_absolute_entropy, ignore_mutation):
+        boltzman_absolute_entropy, ignore_mutation, energy_deltas):
     db = load_db(database)
     amino_codes = [aa for aa in codes.values() if aa not in ignore_mutation]
-
-    energies = combine_energy_mutations(db, amino_codes)
+    energies = combine_energy_mutations(db, amino_codes, energy_deltas)
     sorted_keys = sorted(energies.keys(), key=lambda x: int(x.split(',')[1]))
     fieldnames = [ 'protein', 'subprotein', 'epitope', 'peptide',
                    'peptide_status', 'site', 'chains', 'wt' ]
