@@ -66,7 +66,7 @@ def combine_energy_mutations(energydb, amino_mutations):
                              ' list'.format(k))
                 continue
             protein = entry['protein']
-            subprotein = entry['subprotein']
+            subprotein = entry.get('subprotein', '')
             wt = entry['wt']
             site = entry['site']
             chains = entry['chains']
